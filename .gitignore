@@ -4,7 +4,7 @@
 .cache
 user.pkl
 data.pkl
-dataset.pkl
+tokenized.pkl
 accounts.db
 accounts.csv
 model.pth

@@ -15,7 +15,7 @@ dependencies = [
   "pyarrow==19.0.1",
   "pydantic==2.10.6",
   "pypager==3.0.1",
-  "soynlp==0.0.493",
+  "soynlp",
   "tiktoken==0.9.0",
   "torch==2.6.0",
   "tqdm==4.67.1",
@@ -27,6 +27,7 @@ dependencies = [
 torch = [
   { index = "pytorch-cu" },
 ]
+soynlp = { git = "https://github.com/MisileLab/soynlp" }
 
 [[tool.uv.index]]
 name = "pytorch-cu"
