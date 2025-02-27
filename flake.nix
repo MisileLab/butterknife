@@ -1,5 +1,5 @@
 {
-  description = "Environment for cabinet";
+  description = "Environment for butterknife";
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs";
 

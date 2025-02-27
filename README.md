@@ -1,11 +1,12 @@
-# cabinet
+# butterknife
 
-Find suicidal people using stream of text.
+Identify suicidal or not using stream of text.
 
 ## Features
 
-- [x] Basic identification
-  - [x] Embedding Layer
+- [ ] Basic identification
+  - [ ] Emotion Layer
+  - [ ] Context Layer
 - [ ] Improvement Points
   - [x] Add test dataset
   - [x] Epoch support
@@ -14,10 +15,6 @@ Find suicidal people using stream of text.
   - [ ] make mild suicidal to 50% suicidal
   - [ ] seperate message of user that changed (non-suicidal <-> suicidal)
   - [ ] seperate multi-modal version
-  - [ ] Other embeddings
-    - [x] openai/embedding-3-large
-    - [ ] voyage ai
-    - [ ] unsupervised embedding
   - [ ] More datasets
     - [x] X
     - [ ] Bluesky
@@ -25,9 +22,8 @@ Find suicidal people using stream of text.
     - [ ] Instagram
 - [ ] Multi Lang support
   - [ ] English
-- [ ] More research needed
-  - [ ] Emotion Layer
-  - [ ] Context Layer
+  - [ ] Japanese
+  - [ ] Chinese
 
 ## Models
 
