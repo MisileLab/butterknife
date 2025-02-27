@@ -27,5 +27,5 @@ Identify suicidal or not using stream of text.
 
 ## Models
 
-- [v0](https://minio.misile.xyz/noa/models/cabinet_v0.pth.zst)
+- [v0 (Embedding-Based)](https://minio.misile.xyz/noa/models/cabinet_v0.pth.zst)
   - [v0.1 (28% error)](https://minio.misile.xyz/noa/models/cabinet_v0.1.pth.zst)
