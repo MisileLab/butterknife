@@ -1,15 +1,18 @@
+from collections import defaultdict
 from contextlib import suppress
 from os import getenv
 from pathlib import Path
 from re import compile
 from sys import stdout
-from typing import final, override
+from typing import Any, final, override
 
 from loguru import logger
 from pandas import DataFrame, Series, concat # pyright: ignore[reportMissingTypeStubs]
 from pandas import read_pickle as _read_pickle # pyright: ignore[reportMissingTypeStubs]
 from pydantic import BaseModel
-from torch import Tensor, cat, nn
+from torch import Tensor, nn, cat
+from torch.cuda import is_available
+from transformers import AutoModel # pyright: ignore[reportMissingTypeStubs]
 from twscrape import API # pyright: ignore[reportMissingTypeStubs]
 from emoji import replace_emoji
 from soynlp.normalizer import repeat_normalize # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
@@ -19,38 +22,59 @@ _ = logger.add(stdout, level="DEBUG")
 
 pattern = compile(r'[^ .,?!/@$%~％·∼()\x00-\x7Fㄱ-ㅣ가-힣]+')
 url_pattern = compile(
-    r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)')
+  r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
+)
+device = "cuda" if is_available() else "cpu"
 
 @final
 class Model(nn.Module):
-  def __init__(self, data_amount: int) -> None:
+  def __init__(self, data_amount: int, pretrained_model: str = "monologg/kcelectra-base") -> None:
     super().__init__()  # pyright: ignore[reportUnknownMemberType]
-    self.embedding_layers = nn.ModuleList([
-      nn.Sequential(
-        nn.Linear(3072, 64),
-        nn.ReLU(),
-        nn.Dropout(0.2)
-      ) for _ in range(data_amount)
-    ])
+    self.bert: AutoModel = AutoModel.from_pretrained(pretrained_model).to(device) # pyright: ignore[reportUnknownMemberType]
+    hidden_size: int = int(self.bert.config.hidden_size * data_amount) # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+    self.emotion_layer = nn.Sequential(
+      nn.Linear(hidden_size, 128),
+      nn.ReLU(),
+      nn.Dropout(0.2)
+    )
 
-    self.percentage_layer = nn.Sequential()
-    n = 64 * data_amount
-    while n // 4 >= 32:
-      _ = self.percentage_layer.append(nn.Linear(n, n // 4))
-      _ = self.percentage_layer.append(nn.ReLU())
-      _ = self.percentage_layer.append(nn.Dropout(0.2))
-      n //= 4
-    _ = self.percentage_layer.append(nn.Linear(n, 1))
-    self.percentage_layer = self.percentage_layer
+    self.context_layer = nn.Sequential(
+      nn.Linear(hidden_size, 128),
+      nn.ReLU(),
+      nn.Dropout(0.2)
+    )
+
+    self.classifier = nn.Sequential(
+      nn.Linear(256, 64),
+      nn.ReLU(),
+      nn.Dropout(0.2),
+      nn.Linear(64, 2)
+    )
 
   @override
-  def forward(self, x: Tensor) -> Tensor:
-    embedding_layer_results: list[Tensor] = []
-    for i, f in enumerate(self.embedding_layers):
-      xi = x[:, i, :]
-      _ = embedding_layer_results.append(f(xi)) # pyright: ignore[reportAny]
-    concatenated = cat(embedding_layer_results, dim=1)
-    return self.percentage_layer(concatenated) # pyright: ignore[reportAny]
+  def forward(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
+    outputs: dict[str, list[Any]] = defaultdict(list) # pyright: ignore[reportExplicitAny]
+    for i in range(len(input_ids)):
+      sub_input_ids = input_ids[i].to(device)
+      sub_attention_mask = attention_mask[i].to(device)
+      output: Any = self.bert( # pyright: ignore[reportCallIssue, reportExplicitAny, reportAny]
+        input_ids=sub_input_ids,
+        attention_mask=sub_attention_mask,
+        return_dict=True
+      )
+
+      sequence_output: Tensor = output.last_hidden_state # pyright: ignore[reportAny]
+      pooled_output = sequence_output[:, 0, :]
+
+      outputs["sequence_output"].append(sequence_output)
+      outputs["pooled_output"].append(pooled_output)
+
+    emotion_features: Tensor = self.emotion_layer(cat(outputs["pooled_output"], dim=0))
+    context_features: Tensor = self.context_layer(cat(outputs["sequence_output"]).mean(dim=1))
+
+    combined_features = cat([emotion_features, context_features], dim=1).to(device)
+    logits: Tensor = self.classifier(combined_features)
+    return logits
 
 class User(BaseModel):
   uid: int
