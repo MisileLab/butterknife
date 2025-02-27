@@ -1,20 +1,30 @@
-from pickle import dumps
 from pathlib import Path
+from pickle import dumps
 
-from tqdm.auto import tqdm
-from polars import read_ndjson, col, Int64
+from lib import read_pickle, Data, clean
 
-data: dict[str, list[list[list[float]]]] = {
-  "suicidal": [],
-  "normal": []
-}
+from torch import Tensor
+from transformers import AutoTokenizer # pyright: ignore[reportMissingTypeStubs]
+from tqdm import tqdm
 
-for i in tqdm(list(Path("embedding_results").glob("*.jsonl"))):
-  df = read_ndjson(i)
-  df = df.with_columns(
-    col("custom_id").str.replace("request-", "").cast(Int64).alias("sort_key")
-  ).sort("sort_key").drop("sort_key")
-  embedding: list[list[float]] = [x["body"]["data"][0]["embedding"] for x in df["response"]] # pyright: ignore[reportAny]
-  data["normal" if not i.name.startswith("suicidal") else "suicidal"].append(embedding)
+tokenizer = AutoTokenizer.from_pretrained('beomi/kcELECTRA-base-v2022') # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+data = read_pickle("data.pkl")
+datas: list[tuple[list[dict[str, Tensor]], bool]] = []
+max_len = 128
 
-_ = Path("embedding.pkl").write_bytes(dumps(data))
+for _i in tqdm(data.to_dict('records')): # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportUnknownArgumentType]
+  i = Data.model_validate(_i)
+  t_data: list[dict[str, Tensor]] = []
+  for t in i.data:
+    data = clean(t)
+    encoded: dict[str, Tensor] = tokenizer( # pyright: ignore[reportUnknownVariableType]
+      data, add_special_tokens=True, max_length=max_len, padding='max_length', truncation=True, return_tensors='pt'
+    )
+    t_data.append({
+      'input_ids': encoded['input_ids'].flatten(), # pyright: ignore[reportUnknownMemberType]
+      'attention_mask': encoded['attention_mask'].flatten() # pyright: ignore[reportUnknownMemberType]
+    })
+  datas.append((t_data, i.suicidal))
+
+_ = Path("tokenized.pkl").write_bytes(dumps(datas))
+

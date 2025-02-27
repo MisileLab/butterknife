@@ -3,13 +3,9 @@
 .python-version
 user.pkl
 data.pkl
-userids
+dataset.pkl
 accounts.db
 accounts.csv
-batches.pkl
-embeddings
-embedding_results
-embedding.pkl
 model.pth
 
 # community/Python/JupyterNotebooks.gitignore by ignofierplus
