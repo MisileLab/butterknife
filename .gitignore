@@ -1,6 +1,7 @@
 .vscode
 .infisical.json
 .python-version
+.cache
 user.pkl
 data.pkl
 dataset.pkl
