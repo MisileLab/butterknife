@@ -57,7 +57,7 @@ class Model(nn.Module):
 
   @override
   def forward(self, input_ids: list[Tensor], attention_mask: list[Tensor]) -> Tensor:
-    outputs: dict[str, list[Any]] = defaultdict(list) # pyright: ignore[reportExplicitAny]
+    outputs: dict[str, list[Tensor]] = defaultdict(list) # pyright: ignore[reportExplicitAny]
     for sub_input_ids, sub_attention_mask in zip(input_ids, attention_mask):
       sub_input_ids = sub_input_ids.to(device)
       sub_attention_mask = sub_attention_mask.to(device)
@@ -67,17 +67,17 @@ class Model(nn.Module):
         return_dict=True
       )
 
-      sequence_output = output.last_hidden_state # pyright: ignore[reportAny]
-      pooled_output = sequence_output[:, 0, :] # pyright: ignore[reportAny]
+      sequence_output: Tensor = output.last_hidden_state # pyright: ignore[reportAny]
+      pooled_output = sequence_output[:, 0, :]
 
       outputs["sequence_output"].append(sequence_output)
       outputs["pooled_output"].append(pooled_output)
 
     emotion_features: Tensor = self.emotion_layer(
-      cat([cat(t, dim=0) for t in outputs["pooled_output"]]) # pyright: ignore[reportAny]
+      cat(outputs["pooled_output"])
     )
     context_features: Tensor = self.context_layer(
-      cat([cat(t).mean(dim=1) for t in outputs["sequence_output"]]) # pyright: ignore[reportAny]
+      cat([t.mean(dim=1) for t in outputs["sequence_output"]]) # pyright: ignore[reportAny]
     )
 
     combined_features = cat([emotion_features, context_features], dim=1).to(device)
