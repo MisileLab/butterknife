@@ -4,7 +4,11 @@ from os import getenv
 from pathlib import Path
 from re import compile
 from sys import stdout
-from typing import Any, final, override
+
+try:
+  from typing import Any, final, override
+except ImportError:
+  from typing_extensions import Any, final, override
 
 from loguru import logger
 from pandas import DataFrame, Series, concat # pyright: ignore[reportMissingTypeStubs]
@@ -28,10 +32,10 @@ device = "cuda" if is_available() else "cpu"
 
 @final
 class Model(nn.Module):
-  def __init__(self, data_amount: int, pretrained_model: str = "monologg/kcelectra-base") -> None:
+  def __init__(self, data_amount: int, pretrained_model: str = "beomi/kcelectra-base") -> None:
     super().__init__()  # pyright: ignore[reportUnknownMemberType]
-    self.bert: AutoModel = AutoModel.from_pretrained(pretrained_model).to(device) # pyright: ignore[reportUnknownMemberType]
-    hidden_size: int = int(self.bert.config.hidden_size * data_amount) # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+    self.electra: AutoModel = AutoModel.from_pretrained(pretrained_model).to(device) # pyright: ignore[reportUnknownMemberType]
+    hidden_size: int = int(self.electra.config.hidden_size * data_amount) # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
     self.emotion_layer = nn.Sequential(
       nn.Linear(hidden_size, 128),
       nn.ReLU(),
@@ -52,25 +56,29 @@ class Model(nn.Module):
     )
 
   @override
-  def forward(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
+  def forward(self, input_ids: list[Tensor], attention_mask: list[Tensor]) -> Tensor:
     outputs: dict[str, list[Any]] = defaultdict(list) # pyright: ignore[reportExplicitAny]
-    for i in range(len(input_ids)):
-      sub_input_ids = input_ids[i].to(device)
-      sub_attention_mask = attention_mask[i].to(device)
-      output: Any = self.bert( # pyright: ignore[reportCallIssue, reportExplicitAny, reportAny]
+    for sub_input_ids, sub_attention_mask in zip(input_ids, attention_mask):
+      sub_input_ids = sub_input_ids.to(device)
+      sub_attention_mask = sub_attention_mask.to(device)
+      output: Any = self.electra( # pyright: ignore[reportCallIssue, reportExplicitAny, reportAny]
         input_ids=sub_input_ids,
         attention_mask=sub_attention_mask,
         return_dict=True
       )
 
-      sequence_output: Tensor = output.last_hidden_state # pyright: ignore[reportAny]
-      pooled_output = sequence_output[:, 0, :]
+      sequence_output = output.last_hidden_state # pyright: ignore[reportAny]
+      pooled_output = sequence_output[:, 0, :] # pyright: ignore[reportAny]
 
       outputs["sequence_output"].append(sequence_output)
       outputs["pooled_output"].append(pooled_output)
 
-    emotion_features: Tensor = self.emotion_layer(cat(outputs["pooled_output"], dim=0))
-    context_features: Tensor = self.context_layer(cat(outputs["sequence_output"]).mean(dim=1))
+    emotion_features: Tensor = self.emotion_layer(
+      cat([cat(t, dim=0) for t in outputs["pooled_output"]]) # pyright: ignore[reportAny]
+    )
+    context_features: Tensor = self.context_layer(
+      cat([cat(t).mean(dim=1) for t in outputs["sequence_output"]]) # pyright: ignore[reportAny]
+    )
 
     combined_features = cat([emotion_features, context_features], dim=1).to(device)
     logits: Tensor = self.classifier(combined_features)
