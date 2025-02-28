@@ -1,83 +1,119 @@
 from pathlib import Path
 from pickle import loads
+from typing import final, override
 
 from tqdm.auto import tqdm
-
-from torch import tensor, Tensor, nn, cat, optim, save, abs, zeros, ones, no_grad # pyright: ignore[reportUnknownVariableType]
+import torch
+from torch import Tensor, nn, cat, optim, save, no_grad, tensor # pyright: ignore[reportUnknownVariableType]
 from torch.cuda import is_available, empty_cache
-from torch.utils.data import DataLoader, TensorDataset, random_split
+from torch.utils.data import DataLoader, Dataset as tDataset
+from sklearn.model_selection import train_test_split # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
 
 from lib import Model
 
 device = "cuda" if is_available() else "cpu"
-data_device = "cpu" # dataset is too big to fit in GPU memory
 print(device)
 
 amount = 3
 batch_size = 32
 
-print("loading dataset")
-dataset: SuicideDataset = loads(Path("dataset.pkl"))
-print("loaded")
-lx_t = len(dataset)
-train_size = int(0.6 * lx_t)
-val_size = int(0.2 * lx_t)
-test_size = lx_t - val_size - train_size
+@final
+class Dataset(tDataset): # pyright: ignore[reportMissingTypeArgument]
+  def __init__(self, data: list[dict[str, list[Tensor]]], labels: list[int]):
+    _data: list[dict[str, Tensor]] = []
+    _labels: list[Tensor] = []
+    for i, j in enumerate(data):
+      j['input_ids'] = [k.to(device) for k in j['input_ids']]
+      j['attention_mask'] = [k.to(device) for k in j['attention_mask']]
+      total = len(j)-amount-1
+      t = tqdm(description=f'{i}/{len(data)}', total=total)
+      current = 0
+      while current <= total:
+        _data.append({
+          'input_ids': cat(j['input_ids'][current:current+2]).to('cpu'),
+          'attention_mask': cat(j['attention_mask'][current:current+2]).to('cpu')
+        })
+        _labels.append(tensor(labels[i]))
+        _ = t.update()
+      j['input_ids'] = [k.to('cpu') for k in j['input_ids']]
+      j['attention_mask'] = [k.to('cpu') for k in j['attention_mask']]
+    self.data = _data
+    self.labels = _labels
+    del data, labels
+    assert len(self.data) == len(self.labels)
 
-train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
-del dataset, val_size, train_size, test_size
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+  def __len__(self):
+    return len(self.data)
+
+  @override
+  def __getitem__(self, index: int) -> dict[str, Tensor]:
+    data = self.data[index]
+    data["label"] = self.labels[index]
+    return data
+
+print("loading dataset")
+raw_dataset: tuple[list[dict[str, list[Tensor]]], list[int]] = loads(Path("tokenized.pkl").read_bytes())
+print("loaded")
+
+random_state = 9058670178134004790
+test_size = 0.2
+
+train_data, train_labels, test_data, test_labels = train_test_split( # pyright: ignore[reportUnknownVariableType]
+  raw_dataset[0], raw_dataset[1],
+  test_size=test_size,
+  random_state=random_state,
+  stratify=raw_dataset[1]
+)
+del random_state, test_size
+
+train_dataset = Dataset(train_data, train_labels) # pyright: ignore[reportUnknownArgumentType]
+test_dataset = Dataset(test_data, test_labels) # pyright: ignore[reportUnknownArgumentType]
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) # pyright: ignore[reportUnknownVariableType]
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False) # pyright: ignore[reportUnknownVariableType]
 
 epoches = 300
 model = Model(amount).to(device)
 criterion = nn.HuberLoss()
 optimizer = optim.AdamW(model.parameters(), lr=2e-5)
 
-t = tqdm(range(epoches))
-
 # Early Stopping Parameters
-patience = 5
+patience = 3
 best_loss = float('inf')
 patience_counter = 0
 model_path = "model.pth"
 best_model = model.state_dict()
 
-for epoch in t:
+for epoch in range(epoches):
   _ = model.train()
-  running_loss = 0.0
-  count = 0
-  for _x, _y in train_loader:
-    _x: Tensor
-    _y: Tensor
-    x = _x.to(device)
-    y = _y.to(device)
-    if x.size(0) < amount:
-      continue
+
+  train_loss = 0
+  train_correct = 0
+  train_total = 0
+  
+  for batch in tqdm(train_loader, desc=f'Epoch {epoch + 1}/{epoches}'): # pyright: ignore[reportUnknownArgumentType]
+    batch: dict[str, Tensor]
+    input_ids = batch['input_ids'].to(device)
+    attention_mask = batch['attention_mask'].to(device)
+    labels = batch['label'].to(device)
+    
     optimizer.zero_grad()
-
-    windows_x = x.unfold(0, amount, 1).transpose(1, 2)
-    windows_y = y[amount - 1:]
-
-    del x, y, _x, _y
-
-    output: Tensor = model(windows_x)
-    target = windows_y.mean(dim=1, keepdim=True)
-
-    loss: Tensor = criterion(output, target)
+    outputs: Tensor = model(input_ids, attention_mask)
+    loss: Tensor = criterion(outputs, labels)
     _ = loss.backward() # pyright: ignore[reportUnknownMemberType]
     _ = optimizer.step() # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    
+    train_loss += loss.item()
+    _, predicted = torch.max(outputs, 1)
+    train_total += labels.size(0)
+    train_correct += (predicted == labels).sum().item()
 
-    running_loss += loss.item() * windows_x.size(0)
-    count += windows_x.size(0)
-    del windows_x, windows_y, output, target, loss
+  train_accuracy = 100 * train_correct / train_total
+
+  print(f'Epoch {epoch + 1}:')
+  print(f'Training Loss: {train_loss/len(train_loader):.4f}, Accuracy: {train_accuracy:.2f}%') # pyright: ignore[reportUnknownArgumentType]
   
-  avg_loss = running_loss / count
-  t.set_description(str(avg_loss))
-  
-  if avg_loss < best_loss:
-    best_loss = avg_loss
+  if train_loss < best_loss:
+    best_loss = train_loss/len(train_loader) # pyright: ignore[reportUnknownArgumentType]
     patience_counter = 0
     best_model = model.state_dict()
   else:
@@ -95,24 +131,12 @@ empty_cache()
 
 _ = model.eval()
 with no_grad():
-  test_x_list: list[Tensor] = []
-  test_y_list: list[Tensor] = []
-  for x_batch, y_batch in tqdm(test_loader, desc="Collecting test data"):
-    x_batch: Tensor
+  total_error: list[Tensor] = []
+  for x_batch, y_batch in tqdm(test_loader, desc="Collecting test data"): # pyright: ignore[reportUnknownArgumentType]
+    x_batch: dict[str, Tensor]
     y_batch: Tensor
-    _ = test_x_list.append(x_batch)
-    _ = test_y_list.append(y_batch)
-  test_x_all = cat(test_x_list, dim=0).to(device)
-  test_y_all = cat(test_y_list, dim=0).to(device)
-  
-  if test_x_all.size(0) < amount:
-    print("Not enough test samples to form a window.")
-  else:
-    windows_x = test_x_all.unfold(0, amount, 1).transpose(1, 2)
-    windows_y = test_y_all[amount - 1:]
-    
-    predictions: Tensor = model(windows_x)
-    targets = windows_y.mean(dim=1, keepdim=True)
-    error = abs(predictions - targets)
-    avg_error = error.mean().item()
-    print("Average test error:", avg_error)
+    predictions: Tensor = model(x_batch['input_ids'].to('cuda'), x_batch['attention_mask'].to('cuda'))
+    total_error.append(torch.abs(predictions - y_batch))
+  avg_error = tensor(total_error).mean()
+  print("average test error:", avg_error[0], avg_error[1])
+  print("just for debug:", len(avg_error))
