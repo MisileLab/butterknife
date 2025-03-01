@@ -7,9 +7,6 @@ from lib import read_pickle, Data, clean
 from torch import Tensor
 from transformers import AutoTokenizer # pyright: ignore[reportMissingTypeStubs]
 from tqdm import tqdm
-from os import environ
-
-environ["HF_HOME"] = str(Path("./.cache").absolute())
 
 tokenizer = AutoTokenizer.from_pretrained('beomi/kcELECTRA-base') # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 data = read_pickle("data.pkl")

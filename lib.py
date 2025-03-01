@@ -3,11 +3,12 @@ from contextlib import suppress
 from os import getenv
 from pathlib import Path
 from re import compile
-from sys import stdout
+from sys import stdout, version_info
+from os import environ
 
-try:
+if version_info.major >= 3 and version_info.minor > 11:
   from typing import Any, final, override
-except ImportError:
+else:
   from typing_extensions import Any, final, override
 
 from loguru import logger
@@ -21,6 +22,8 @@ from twscrape import API # pyright: ignore[reportMissingTypeStubs]
 from emoji import replace_emoji
 from soynlp.normalizer import repeat_normalize # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
 
+environ["HF_HOME"] = str(Path("./.cache").absolute())
+
 logger.remove()
 _ = logger.add(stdout, level="DEBUG")
 
@@ -32,24 +35,26 @@ device = "cuda" if is_available() else "cpu"
 
 @final
 class Model(nn.Module):
-  def __init__(self, data_amount: int, pretrained_model: str = "beomi/kcelectra-base") -> None:
+  def __init__(self, data_amount: int, pretrained_model: str = "beomi/kcELECTRA-base", device: str = device) -> None:
     super().__init__()  # pyright: ignore[reportUnknownMemberType]
     self.electra: AutoModel = AutoModel.from_pretrained(pretrained_model).to(device) # pyright: ignore[reportUnknownMemberType]
-    hidden_size: int = int(self.electra.config.hidden_size * data_amount) # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+    hidden_size: int = int(self.electra.config.hidden_size) # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+    features_size = 128
     self.emotion_layer = nn.Sequential(
-      nn.Linear(hidden_size, 128),
+      nn.Linear(hidden_size, features_size),
       nn.ReLU(),
       nn.Dropout(0.2)
     )
 
     self.context_layer = nn.Sequential(
-      nn.Linear(hidden_size, 128),
+      nn.Linear(hidden_size, features_size),
       nn.ReLU(),
       nn.Dropout(0.2)
     )
 
     self.classifier = nn.Sequential(
-      nn.Linear(256, 64),
+      nn.Linear(features_size * 2 * data_amount, 64 * data_amount), # idk why 32
+      nn.Linear(64 * data_amount, 64),
       nn.ReLU(),
       nn.Dropout(0.2),
       nn.Linear(64, 2)
@@ -57,7 +62,7 @@ class Model(nn.Module):
 
   @override
   def forward(self, input_ids: list[Tensor], attention_mask: list[Tensor]) -> Tensor:
-    outputs: dict[str, list[Tensor]] = defaultdict(list) # pyright: ignore[reportExplicitAny]
+    outputs: dict[str, list[Tensor]] = defaultdict(list)
     for sub_input_ids, sub_attention_mask in zip(input_ids, attention_mask):
       sub_input_ids = sub_input_ids.to(device)
       sub_attention_mask = sub_attention_mask.to(device)
@@ -77,10 +82,10 @@ class Model(nn.Module):
       cat(outputs["pooled_output"])
     )
     context_features: Tensor = self.context_layer(
-      cat([t.mean(dim=1) for t in outputs["sequence_output"]]) # pyright: ignore[reportAny]
+      cat([t.mean(dim=1) for t in outputs["sequence_output"]])
     )
 
-    combined_features = cat([emotion_features, context_features], dim=1).to(device)
+    combined_features = cat([emotion_features, context_features], dim=1).to(device).flatten()
     logits: Tensor = self.classifier(combined_features)
     return logits
 

@@ -2,9 +2,10 @@
 
 from pathlib import Path
 from pickle import loads
-try:
+from sys import version_info
+if version_info.major >= 3 and version_info.minor > 11:
   from typing import final, override
-except ImportError:
+else:
   from typing_extensions import final, override
 
 from tqdm.auto import tqdm
@@ -20,28 +21,25 @@ device = "cuda" if is_available() else "cpu"
 print(device)
 
 amount = 3
-batch_size = 32
 
 @final
 class Dataset(tDataset): # pyright: ignore[reportMissingTypeArgument]
   def __init__(self, data: list[dict[str, list[Tensor]]], labels: list[int]):
     _data: list[dict[str, list[Tensor]]] = []
     _labels: list[Tensor] = []
-    for i, j in enumerate(data):
+    for i, j in enumerate(tqdm(data)):
       total = len(j['input_ids'])-amount-1
       if total <= 0:
         continue
       j['input_ids'] = [k.to(device) for k in j['input_ids']]
       j['attention_mask'] = [k.to(device) for k in j['attention_mask']]
-      t = tqdm(desc=f'{i}/{len(data)}', total=total)
       current = 0
       while current <= total:
         _data.append({
           'input_ids': j['input_ids'][current:current+3],
           'attention_mask': j['attention_mask'][current:current+3]
         })
-        _labels.append(tensor(labels[i]))
-        _ = t.update()
+        _labels.append(tensor(labels[i], dtype=torch.float))
         current += 1
       j['input_ids'] = [k.to('cpu') for k in j['input_ids']]
       j['attention_mask'] = [k.to('cpu') for k in j['attention_mask']]
@@ -78,7 +76,7 @@ train_dataset = Dataset(train_data, train_labels) # pyright: ignore[reportUnknow
 test_dataset = Dataset(test_data, test_labels) # pyright: ignore[reportUnknownArgumentType]
 train_loader = DataLoader( # pyright: ignore[reportUnknownVariableType]
   train_dataset,
-  batch_size=batch_size,
+  batch_size=1,
   shuffle=True
 )
 test_loader = DataLoader( # pyright: ignore[reportUnknownVariableType]
@@ -112,16 +110,16 @@ for epoch in t:
     batch: dict[str, list[Tensor]]
     input_ids = [i.to(device) for i in batch['input_ids']]
     attention_mask = [i.to(device) for i in batch['attention_mask']]
-    labels = batch['label'][0].to(device)
-    
+    labels = tensor([batch['label'][0], batch['label'][0]]).to(device)
+
     optimizer.zero_grad()
-    outputs: Tensor = model(input_ids, attention_mask)
+    outputs: Tensor = model(input_ids, attention_mask).to(device) # pyright: ignore[reportAny, reportRedeclaration]
     loss: Tensor = criterion(outputs, labels)
     _ = loss.backward() # pyright: ignore[reportUnknownMemberType]
     _ = optimizer.step() # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-    
+
     train_loss += loss.item()
-    _, predicted = torch.max(outputs, 1)
+    _, predicted = torch.max(outputs, dim=0)
     train_total += labels.size(0)
     train_correct += (predicted == labels).sum().item()
 
@@ -147,12 +145,21 @@ empty_cache()
 
 _ = model.eval()
 with no_grad():
-  total_error: list[Tensor] = []
-  for x_batch, y_batch in tqdm(test_loader, desc="Collecting test data"): # pyright: ignore[reportUnknownArgumentType]
-    x_batch: dict[str, Tensor]
-    y_batch: Tensor
-    predictions: Tensor = model(x_batch['input_ids'].to('cuda'), x_batch['attention_mask'].to('cuda'))
-    total_error.append(torch.abs(predictions - y_batch))
-  avg_error = tensor(total_error).mean()
-  print("average test error:", avg_error[0], avg_error[1])
-  print("just for debug:", len(avg_error))
+  total_percent_error: list[Tensor] = []
+  total_label_miss = 0
+  for batch in tqdm(test_loader, desc="Collecting test data"): # pyright: ignore[reportUnknownArgumentType]
+    input_ids = [i.to(device) for i in batch['input_ids']]
+    attention_mask = [i.to(device) for i in batch['attention_mask']]
+    label = batch['label'][0].to(device)
+    outputs: Tensor = model(input_ids, attention_mask)
+    probabilities = torch.softmax(outputs, dim=0)
+    prediction = torch.argmax(probabilities, dim=0)
+    risk_score = probabilities[1].item()
+    if prediction != label:
+      total_label_miss += 1
+    total_percent_error.append(torch.abs(label - probabilities[1]))
+  avg_error = tensor(total_percent_error).mean()
+  print("average percent error:", tensor(total_percent_error).mean())
+  print("total label miss:", total_label_miss)
+  print("total data:", len(test_loader)) # pyright: ignore[reportUnknownArgumentType]
+  print("accuracy:", 1 - total_label_miss/len(test_loader)) # pyright: ignore[reportUnknownArgumentType]
