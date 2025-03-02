@@ -9,7 +9,7 @@ from loguru import logger
 from twscrape import Tweet, gather # pyright: ignore[reportMissingTypeStubs]
 from twscrape.logger import set_log_level # pyright: ignore[reportMissingTypeStubs]
 
-from lib import Data, User, append, is_unique, read_pickle, write_to_pickle, api
+from libraries.scrape import Data, User, append, is_unique, read, api
 
 url_filter = compile(r"(https?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)")
 
@@ -38,10 +38,10 @@ if not Path("./results").is_dir():
   Path("./results").mkdir()
 
 async def main():
-  df = read_pickle("data.pkl")
-  df_user = read_pickle("user.pkl")
+  df = read("data.avro")
+  df_user = read("user.avro")
 
-  for _i in df_user.to_dict("records"): # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+  for _i in df_user.to_dicts():
     i: User = User.model_validate(_i)
     uid: int = i.uid
     logger.debug(uid)
@@ -82,7 +82,7 @@ async def main():
       data=data
     ))
 
-  write_to_pickle(df, "data.pkl")
+  df.write_avro("data.avro")
 
 if __name__ == "__main__":
   run(main())

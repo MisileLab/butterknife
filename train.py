@@ -15,7 +15,7 @@ from torch.cuda import is_available, empty_cache
 from torch.utils.data import DataLoader, Dataset as tDataset
 from sklearn.model_selection import train_test_split # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
 
-from lib import Model
+from libraries.model import Model
 
 device = "cuda" if is_available() else "cpu"
 print(device)

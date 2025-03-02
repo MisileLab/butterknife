@@ -4,7 +4,7 @@ from asyncio import run
 from time import sleep
 from secrets import SystemRandom
 
-from lib import is_unique, read_pickle, append, write_to_pickle, User, api
+from libraries.scrape import is_unique, read, append, User, api
 
 base_query = "site:x.com"
 suicidals = [
@@ -15,7 +15,7 @@ suicidals = [
 
 
 async def main():
-  df = read_pickle("user.pkl")
+  df = read("user.avro")
 
   for suicidal_tag in suicidals:
     logger.info(suicidal_tag)
@@ -32,7 +32,7 @@ async def main():
       r = SystemRandom().randint(0, 10)
       logger.debug(f"sleep {r} secs")
       sleep(r)
-  write_to_pickle(df, "user.pkl")
+  df.write_avro("user.avro")
 
 if __name__ == "__main__":
   run(main())

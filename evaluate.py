@@ -1,4 +1,5 @@
-from lib import Model, clean
+from libraries.model import Model
+from libraries.data import clean
 
 from transformers import AutoTokenizer # pyright: ignore[reportMissingTypeStubs]
 from torch import load, no_grad, Tensor, softmax, argmax # pyright: ignore[reportUnknownVariableType]

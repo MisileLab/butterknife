@@ -2,19 +2,20 @@ from collections import defaultdict
 from pathlib import Path
 from pickle import dumps
 
-from lib import read_pickle, Data, clean
+from libraries.scrape import read, Data
+from libraries.data import clean
 
 from torch import Tensor
 from transformers import AutoTokenizer # pyright: ignore[reportMissingTypeStubs]
 from tqdm import tqdm
 
 tokenizer = AutoTokenizer.from_pretrained('beomi/kcELECTRA-base') # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-data = read_pickle("data.pkl")
+data = read("data.avro")
 datas: tuple[list[dict[str, list[Tensor]]], list[int]] = ([], [])
 max_len = 128
 amount = 3
 
-for _i in tqdm(data.to_dict('records')): # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportUnknownArgumentType]
+for _i in tqdm(data.to_dicts()):
   i = Data.model_validate(_i)
   t_data: dict[str, list[Tensor]] = defaultdict(list)
   count = 0

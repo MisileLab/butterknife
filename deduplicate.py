@@ -1,5 +1,6 @@
-from lib import read_pickle, write_to_pickle
+from libraries.scrape import read
 
-df = read_pickle("user.pkl")
-df = df.drop_duplicates(subset=["uid"])
-write_to_pickle(df, "user.pkl")
+df = read("user.pkl")
+df = df.unique(["uid"])
+df.write_avro("user.avro")
+

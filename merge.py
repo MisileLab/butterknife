@@ -1,11 +1,9 @@
-from pandas import DataFrame # pyright: ignore[reportMissingTypeStubs]
+from polars import DataFrame, col
 
-from lib import read_pickle, write_to_pickle
+from libraries.scrape import read
 
-df = read_pickle("data.pkl")
-df_user: DataFrame = df.loc[df['confirmed']] # pyright: ignore[reportUnknownVariableType]
-del df_user['data']
-del df_user['confirmed']
-
-write_to_pickle(df_user, "user.pkl") # pyright: ignore[reportUnknownArgumentType]
+df = read("data.avro")
+df_user: DataFrame = df.select(col('confirmed'))
+df_user = df.drop(["data", "confirmed"])
+df_user.write_avro("user.avro")
 

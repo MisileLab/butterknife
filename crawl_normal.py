@@ -1,13 +1,13 @@
 from httpx import ConnectTimeout
 from loguru import logger
-from pandas import DataFrame # pyright: ignore[reportMissingTypeStubs]
+from polars import DataFrame, col
 from twscrape import User # pyright: ignore[reportMissingTypeStubs]
 
 from secrets import SystemRandom
 from asyncio import run
 from time import sleep
 
-from lib import is_unique, read_pickle, append, write_to_pickle, User as dUser, api
+from libraries.scrape import is_unique, append, read, User as dUser, api
 
 sleep_interval_min = 0
 sleep_interval_max = 20
@@ -107,10 +107,10 @@ async def subroutine(i: dict[str, object], df: DataFrame, retry: int = 0) -> Dat
   return df
 
 async def main():
-  df = read_pickle("user.pkl")
-  for i in df.loc[df['suicidal']].to_dict('records'): # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
-    df = await subroutine(i, df) # pyright: ignore[reportUnknownArgumentType]
-  write_to_pickle(df, "user.pkl")
+  df = read("user.avro")
+  for i in df.select(col('suicidal')).to_dicts():
+    df = await subroutine(i, df)
+  df.write_avro("user.avro")
 
 if __name__ == "__main__":
   run(main())
