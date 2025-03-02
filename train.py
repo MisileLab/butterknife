@@ -3,7 +3,7 @@
 from pathlib import Path
 from pickle import loads
 from sys import version_info
-if version_info.major >= 3 and version_info.minor > 11:
+if version_info.major >= 3 and version_info.minor >= 12:
   from typing import final, override
 else:
   from typing_extensions import final, override

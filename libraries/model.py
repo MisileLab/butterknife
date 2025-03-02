@@ -2,7 +2,7 @@ from sys import version_info
 from os import environ
 from pathlib import Path
 
-if version_info.major >= 3 and version_info.minor > 10:
+if version_info.major >= 3 and version_info.minor >= 12:
   from typing import final, override
 else:
   from typing_extensions import final, override
