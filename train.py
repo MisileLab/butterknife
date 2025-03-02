@@ -1,4 +1,4 @@
-#!pip install scikit-learn loguru pandas pydantic transformers twscrape emoji soynlp
+#!pip install scikit-learn
 
 from pathlib import Path
 from pickle import loads
@@ -62,7 +62,7 @@ raw_dataset: tuple[list[dict[str, list[Tensor]]], list[int]] = loads(Path("token
 print("loaded")
 
 random_state = 1379357662
-test_size = 0.2
+test_size = 0.1
 
 train_data, test_data, train_labels, test_labels = train_test_split( # pyright: ignore[reportUnknownVariableType]
   raw_dataset[0], raw_dataset[1],

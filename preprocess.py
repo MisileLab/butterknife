@@ -24,10 +24,10 @@ for _i in tqdm(data.to_dicts()):
     if data.replace('\n', '').strip() == '':
       continue
     encoded: dict[str, Tensor] = tokenizer( # pyright: ignore[reportUnknownVariableType]
-      data, add_special_tokens=True, max_length=max_len, padding='max_length', truncation=True, return_tensors='pt'
+      data, max_length=max_len, padding='max_length', truncation=True, return_tensors='pt'
     )
-    t_data['input_ids'].append(encoded['input_ids'].flatten()) # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-    t_data['attention_mask'].append(encoded['attention_mask'].flatten()) # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    t_data['input_ids'].append(encoded['input_ids'].squeeze()) # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    t_data['attention_mask'].append(encoded['attention_mask'].squeeze()) # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
     count += 1
   if count < amount:
     continue
