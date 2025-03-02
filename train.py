@@ -76,7 +76,7 @@ train_dataset = Dataset(train_data, train_labels) # pyright: ignore[reportUnknow
 test_dataset = Dataset(test_data, test_labels) # pyright: ignore[reportUnknownArgumentType]
 train_loader = DataLoader( # pyright: ignore[reportUnknownVariableType]
   train_dataset,
-  batch_size=1,
+  batch_size=32,
   shuffle=True
 )
 test_loader = DataLoader( # pyright: ignore[reportUnknownVariableType]
@@ -103,14 +103,12 @@ for epoch in t:
   _ = model.train()
 
   train_loss = 0
-  train_correct = 0
-  train_total = 0
   
-  for batch in train_loader:
+  for batch in tqdm(train_loader): # pyright: ignore[reportUnknownArgumentType]
     batch: dict[str, list[Tensor]]
     input_ids = [i.to(device) for i in batch['input_ids']]
     attention_mask = [i.to(device) for i in batch['attention_mask']]
-    labels = tensor([batch['label'][0], batch['label'][0]]).to(device)
+    labels = batch['label'][0].to(device)
 
     optimizer.zero_grad()
     outputs: Tensor = model(input_ids, attention_mask).to(device) # pyright: ignore[reportAny, reportRedeclaration]
@@ -120,11 +118,8 @@ for epoch in t:
 
     train_loss += loss.item()
     _, predicted = torch.max(outputs, dim=0)
-    train_total += labels.size(0)
-    train_correct += (predicted == labels).sum().item()
 
-  train_accuracy = 100 * train_correct / train_total
-  t.set_description(f'{train_loss/len(train_loader)}, {train_accuracy}') # pyright: ignore[reportUnknownArgumentType]
+  t.set_description(f'{train_loss/len(train_loader)}') # pyright: ignore[reportUnknownArgumentType]
 
   if train_loss < best_loss:
     best_loss = train_loss/len(train_loader) # pyright: ignore[reportUnknownArgumentType]
@@ -146,20 +141,11 @@ empty_cache()
 _ = model.eval()
 with no_grad():
   total_percent_error: list[Tensor] = []
-  total_label_miss = 0
   for batch in tqdm(test_loader, desc="Collecting test data"): # pyright: ignore[reportUnknownArgumentType]
     input_ids = [i.to(device) for i in batch['input_ids']]
     attention_mask = [i.to(device) for i in batch['attention_mask']]
     label = batch['label'][0].to(device)
     outputs: Tensor = model(input_ids, attention_mask)
-    probabilities = torch.softmax(outputs, dim=0)
-    prediction = torch.argmax(probabilities, dim=0)
-    risk_score = probabilities[1].item()
-    if prediction != label:
-      total_label_miss += 1
-    total_percent_error.append(torch.abs(label - probabilities[1]))
+    total_percent_error.append(torch.abs(outputs - label))
   avg_error = tensor(total_percent_error).mean()
-  print("average percent error:", tensor(total_percent_error).mean())
-  print("total label miss:", total_label_miss)
-  print("total data:", len(test_loader)) # pyright: ignore[reportUnknownArgumentType]
-  print("accuracy:", 1 - total_label_miss/len(test_loader)) # pyright: ignore[reportUnknownArgumentType]
+  print("average percent error:", avg_error)
