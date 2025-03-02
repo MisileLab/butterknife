@@ -2,8 +2,8 @@
 .infisical.json
 .python-version
 .cache
-user.pkl
-data.pkl
+user.avro
+data.avro
 tokenized.pkl
 accounts.db
 accounts.csv
