@@ -1,7 +1,7 @@
 from contextlib import suppress
 from copy import deepcopy
 
-from polars import DataFrame, col
+from polars import col
 from pypager.pager import Pager # pyright: ignore[reportMissingTypeStubs]
 from pypager.source import StringSource # pyright: ignore[reportMissingTypeStubs]
 

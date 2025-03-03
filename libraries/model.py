@@ -17,11 +17,23 @@ class Model(nn.Module):
   def __init__(self, data_amount: int, pretrained_model: str = "beomi/kcELECTRA-base") -> None:
     super().__init__()  # pyright: ignore[reportUnknownMemberType]
     self.electra: ElectraModel = ElectraModel.from_pretrained(pretrained_model) # pyright: ignore[reportUnknownMemberType]
-    hidden_size: int = self.electra.config.hidden_size # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-    features_size = 128
+    hidden_size: int = self.electra.config.hidden_size * data_amount # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    features_size = 64 * data_amount
+
+    self.emotion_layer = nn.Sequential(
+      nn.Linear(hidden_size, features_size), # pyright: ignore[reportUnknownArgumentType]
+      nn.ReLU(),
+      nn.Dropout(0.2)
+    )
+
+    self.context_layer = nn.Sequential(
+      nn.Linear(hidden_size, features_size), # pyright: ignore[reportUnknownArgumentType]
+      nn.ReLU(),
+      nn.Dropout(0.2)
+    )
 
     self.percent_layer = nn.Sequential(
-      nn.Linear(hidden_size * data_amount, features_size), # pyright: ignore[reportUnknownArgumentType]
+      nn.Linear(hidden_size * 2, features_size), # pyright: ignore[reportUnknownArgumentType]
       nn.ReLU(),
       nn.Linear(features_size, 1),
       nn.Sigmoid()
@@ -29,7 +41,9 @@ class Model(nn.Module):
 
   @override
   def forward(self, input_ids: list[Tensor], attention_mask: list[Tensor]) -> Tensor:
-    outputs: list[Tensor] = []
+    sequence_outputs: list[Tensor] = []
+    pooled_outputs: list[Tensor] = []
+
     for sub_input_ids, sub_attention_mask in zip(input_ids, attention_mask):
       sub_input_ids = sub_input_ids
       sub_attention_mask = sub_attention_mask
@@ -39,8 +53,9 @@ class Model(nn.Module):
         return_dict=True
       )
 
-      outputs.append(output['last_hidden_state'][:, 0, :])
+      sequence_outputs.append(output['last_hidden_state'].mean(dim=1))
+      pooled_outputs.append(output['last_hidden_state'][:, 0, :])
 
-    combined_features = cat(outputs, dim=1)
+    combined_features = cat([*sequence_outputs, *pooled_outputs], dim=1)
     return self.percent_layer(combined_features).squeeze() # pyright: ignore[reportAny]
 
