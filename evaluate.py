@@ -2,7 +2,7 @@ from libraries.model import Model
 from libraries.data import clean
 
 from transformers import AutoTokenizer # pyright: ignore[reportMissingTypeStubs]
-from torch import load, no_grad, Tensor, softmax, argmax # pyright: ignore[reportUnknownVariableType]
+from torch import load, no_grad, Tensor # pyright: ignore[reportUnknownVariableType]
 from torch.cuda import is_available
 
 device = "cuda" if is_available() else "cpu"
