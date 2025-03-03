@@ -1,17 +1,17 @@
 from contextlib import suppress
 from copy import deepcopy
 
-from pandas import DataFrame # pyright: ignore[reportMissingTypeStubs]
+from polars import DataFrame, col
 from pypager.pager import Pager # pyright: ignore[reportMissingTypeStubs]
 from pypager.source import StringSource # pyright: ignore[reportMissingTypeStubs]
 
-from lib import Data, read_pickle, write_to_pickle
+from libraries.scrape import Data, read
 
-data = read_pickle("data.pkl")
+data = read("data.avro")
 data_res = deepcopy(data)
 
 with suppress(KeyboardInterrupt):
-  for _i in data.loc[data["confirmed"] == False].to_dict('records'): # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType] # noqa: E712
+  for index, _i in enumerate(data.select(col("confirmed") is False).to_dicts()):
     i = Data.model_validate(_i)
     tweets: list[str] = i.data
     suicidal_comments: str = "\n--sep--\n".join(i for i in tweets if i.count("자살")+i.count("자해") != 0)
@@ -33,12 +33,9 @@ with suppress(KeyboardInterrupt):
       suicidal = input("is this suicidal? (if not normal message and it is something like news, input 'r') [y/n/r]: ")
     if suicidal.lower() == "r":
       print("remove")
-      _d_res = data_res[data_res["uid"] != i.uid] # pyright: ignore[reportUnknownVariableType]
-      if not isinstance(_d_res, DataFrame):
-        raise Exception("wtf")
-      data_res = _d_res
+      data_res = data_res.remove(col("uid") == i.uid)
       continue
-    data_res.loc[data_res["uid"] == i.uid, "suicidal"] = suicidal.lower() == "y"
-    data_res.loc[data_res["uid"] == i.uid, "confirmed"] = True
+    data_res[index, 'suicidal'] = suicidal.lower() == "y"
+    data_res[index, 'confirmed'] = True
 
-write_to_pickle(data_res, "data.pkl")
+data_res.write_avro("data.avro")
