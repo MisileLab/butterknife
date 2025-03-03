@@ -4,9 +4,9 @@ Identify suicidal or not using stream of text.
 
 ## Features
 
-- [ ] Basic identification
-  - [ ] Emotion Layer
-  - [ ] Context Layer
+- [x] Basic identification
+  - [x] Emotion Layer
+  - [x] Context Layer
 - [ ] Improvement Points
   - [x] Add test dataset
   - [x] Epoch support
@@ -29,3 +29,5 @@ Identify suicidal or not using stream of text.
 
 - [v0 (Embedding-Based)](https://minio.misile.xyz/noa/models/cabinet_v0.pth.zst)
   - [v0.1 (28% error)](https://minio.misile.xyz/noa/models/cabinet_v0.1.pth.zst)
+- v1 (Electra-Based)
+  - [v1 (26% error)](https://minio.misile.xyz/noa/models/cabinet_v1.pth.zst)

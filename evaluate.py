@@ -30,10 +30,5 @@ with no_grad():
   ]
   input_ids: list[Tensor] = [t['input_ids'] for t in tokenizer_result]
   attention_mask: list[Tensor] = [t['attention_mask'] for t in tokenizer_result]
-  outputs: Tensor = model(input_ids, attention_mask)
-  probabilities = softmax(outputs, dim=0)
-  prediction = argmax(probabilities, dim=0)
-  risk_score = probabilities[1].item()
-  print(f"Prediction: {'suicidal' if prediction == 1 else 'non-suicidal'}")
-  print(f"Risk score: {risk_score}")
-
+  output: Tensor = model(input_ids, attention_mask)
+  print(output.item() * 100)
