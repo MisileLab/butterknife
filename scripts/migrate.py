@@ -1,6 +1,6 @@
 from polars import DataFrame, read_avro
 
-from libraries.scrape import append
+from ..libraries.scrape import append
 
 filename = input("file: ")
 df = read_avro(filename)

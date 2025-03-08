@@ -7,7 +7,7 @@ from secrets import SystemRandom
 from asyncio import run
 from time import sleep
 
-from libraries.scrape import UserType, is_unique, append, read, User as dUser, api
+from ...libraries.scrape import UserType, is_unique, append, read, User as dUser, api
 
 sleep_interval_min = 0
 sleep_interval_max = 20

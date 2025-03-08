@@ -1,4 +1,4 @@
-from libraries.scrape import api
+from ..libraries.scrape import api
 from asyncio import run
 
 async def main():

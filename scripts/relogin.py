@@ -1,4 +1,4 @@
-from libraries.scrape import get_inactives, get_usernames, api
+from ..libraries.scrape import get_inactives, get_usernames, api
 from asyncio import run
 
 async def main():
