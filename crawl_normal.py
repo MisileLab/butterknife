@@ -108,7 +108,7 @@ async def subroutine(i: dict[str, object], df: DataFrame, retry: int = 0) -> Dat
 
 async def main():
   df = read("user.avro")
-  for i in df.select(col('suicidal')).to_dicts():
+  for i in df.select(col('user_type') == 1).to_dicts():
     df = await subroutine(i, df)
   df.write_avro("user.avro")
 
