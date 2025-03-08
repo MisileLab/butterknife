@@ -5,10 +5,15 @@ from polars import col
 from pypager.pager import Pager # pyright: ignore[reportMissingTypeStubs]
 from pypager.source import StringSource # pyright: ignore[reportMissingTypeStubs]
 
-from libraries.scrape import Data, read
+from libraries.scrape import Data, UserType, read
 
 data = read("data.avro")
 data_res = deepcopy(data)
+mapping = {
+  "y": UserType.suicidal,
+  "n": UserType.normal,
+  "r": UserType.ignored
+}
 
 with suppress(KeyboardInterrupt):
   for index, _i in enumerate(data.select(col("confirmed") is False).to_dicts()):
@@ -19,7 +24,7 @@ with suppress(KeyboardInterrupt):
       p = Pager()
       _ = p.add_source(StringSource(suicidal_comments))
       p.run()
-    elif i.suicidal:
+    elif i.user_type == UserType.suicidal:
       print("previously suicidal but none found")
     else:
       print("suicidal none found")
@@ -28,14 +33,10 @@ with suppress(KeyboardInterrupt):
       p = Pager()
       _ = p.add_source(StringSource("\n--sep--\n".join(i for i in tweets)))
       p.run()
-    suicidal = input("is this suicidal? (if not normal message and it is something like news, input 'r') [y/n/r]: ")
-    while suicidal.lower() not in ["y", "n", "r"]:
-      suicidal = input("is this suicidal? (if not normal message and it is something like news, input 'r') [y/n/r]: ")
-    if suicidal.lower() == "r":
-      print("remove")
-      data_res = data_res.remove(col("uid") == i.uid)
-      continue
-    data_res[index, 'suicidal'] = suicidal.lower() == "y"
+    user_type = input("is this suicidal? (if not normal message and it is something like news, input 'r') [y/n/r]: ")
+    while user_type.lower() not in ["y", "n", "r"]:
+      user_type = input("is this suicidal? (if not normal message and it is something like news, input 'r') [y/n/r]: ")
+    data_res[index, 'user_type'] = mapping[user_type.lower()]
     data_res[index, 'confirmed'] = True
 
 data_res.write_avro("data.avro")

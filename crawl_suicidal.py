@@ -4,7 +4,7 @@ from asyncio import run
 from time import sleep
 from secrets import SystemRandom
 
-from libraries.scrape import is_unique, read, append, User, api
+from libraries.scrape import UserType, is_unique, read, append, User, api
 
 base_query = "site:x.com"
 suicidals = [
@@ -27,7 +27,7 @@ async def main():
           uid=user.id,
           name=user.username,
           url=user.url,
-          suicidal=True
+          user_type=UserType.suicidal
         ))
       r = SystemRandom().randint(0, 10)
       logger.debug(f"sleep {r} secs")

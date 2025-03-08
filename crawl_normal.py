@@ -7,7 +7,7 @@ from secrets import SystemRandom
 from asyncio import run
 from time import sleep
 
-from libraries.scrape import is_unique, append, read, User as dUser, api
+from libraries.scrape import UserType, is_unique, append, read, User as dUser, api
 
 sleep_interval_min = 0
 sleep_interval_max = 20
@@ -101,7 +101,7 @@ async def subroutine(i: dict[str, object], df: DataFrame, retry: int = 0) -> Dat
     return df
   logger.info(f"{user.username}: {user.displayname}")
   if is_unique(df, "uid", user.id):
-    df = append(df, dUser(uid=user.id, name=user.username, url=user.url, suicidal=False))
+    df = append(df, dUser(uid=user.id, name=user.username, url=user.url, user_type=UserType.suicidal))
   else:
     logger.error(f"{user.id} is already in the list, this is a bug")
   return df

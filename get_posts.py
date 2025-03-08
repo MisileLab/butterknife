@@ -78,7 +78,7 @@ async def main():
       uid=uid,
       name=i.name,
       url=i.url,
-      suicidal=i.suicidal,
+      user_type=i.user_type,
       data=data
     ))
 

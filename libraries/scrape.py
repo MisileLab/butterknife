@@ -1,19 +1,24 @@
-from os import getenv
+from enum import Enum
+from os import getenv, environ
 from pathlib import Path
 from sys import stdout
-from os import environ
 
 from loguru import logger
-from polars import DataFrame, Series, col, concat, read_avro
+from polars import DataFrame, Series, col, concat, from_dicts, read_avro
 from pydantic import BaseModel
 from twscrape import API # pyright: ignore[reportMissingTypeStubs]
 
 environ["HF_HOME"] = str(Path("./.cache").absolute())
 
+class UserType(Enum):
+  normal = 0
+  suicidal = 1
+  ignored = 2
+
 class User(BaseModel):
   uid: int
   name: str
-  suicidal: bool
+  user_type: UserType
   url: str
 
 class Data(User):
@@ -48,9 +53,9 @@ def read(file_path: str) -> DataFrame:
 def is_unique(df: DataFrame, key: str, value: object) -> bool:
   return df.filter(col(key) == value).is_empty()
 
-def append(df: DataFrame, data: dict[str, object] | Series | BaseModel) -> DataFrame:
+def append(df: DataFrame, data: dict[str, object] | Series | BaseModel | DataFrame) -> DataFrame:
   if isinstance(data, BaseModel):
-    data = Series(data.model_dump())
+    data = from_dicts([data.model_dump()])
   elif isinstance(data, dict):
-    data = Series(data)
+    data = from_dicts([data])
   return concat([df, DataFrame(data)], how="vertical", rechunk=True)

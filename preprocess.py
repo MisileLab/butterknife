@@ -2,6 +2,8 @@ from collections import defaultdict
 from pathlib import Path
 from pickle import dumps
 
+from polars import col
+
 from libraries.scrape import read, Data
 from libraries.data import clean
 
@@ -18,7 +20,7 @@ amount = 3
 # just for data collection
 real_len: list[int] = []
 blank_tokenizer = 3
-t = tqdm(data.to_dicts())
+t = tqdm(data.select(col('user_type') != 2).to_dicts())
 skipped = 0
 
 for _i in t:
@@ -46,7 +48,7 @@ for _i in t:
   if count < amount:
     continue
   datas[0].append(t_data)
-  datas[1].append(1 if i.suicidal else 0)
+  datas[1].append(i.user_type.value)
 
 print(f"average length: {sum(real_len) / len(real_len)}")
 print(f"skipped: {skipped}")
