@@ -4,7 +4,6 @@ from polars import DataFrame, col
 from twscrape import User # pyright: ignore[reportMissingTypeStubs]
 
 from secrets import SystemRandom
-from asyncio import run
 from time import sleep
 
 from ...libraries.scrape import UserType, is_unique, append, read, User as dUser, api
@@ -111,7 +110,4 @@ async def main():
   for i in df.filter(col("user_type") == UserType.suicidal.value).to_dicts():
     df = await subroutine(i, df)
   df.write_avro("user.avro")
-
-if __name__ == "__main__":
-  run(main())
 

@@ -1,5 +1,4 @@
 from csv import DictReader
-from asyncio import run
 
 from twscrape import set_log_level # pyright: ignore[reportMissingTypeStubs]
 
@@ -20,7 +19,4 @@ async def main():
         mfa_code=i.get("mfa_code"),
         cookies=f"ct0={i["ct0"]}" if i.get("ct0") is not None else None
       )
-
-if __name__ == "__main__":
-  run(main())
 

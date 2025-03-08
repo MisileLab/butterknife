@@ -1,6 +1,5 @@
 from time import sleep
 from secrets import SystemRandom
-from asyncio import run
 from pathlib import Path
 from re import compile, sub
 
@@ -9,8 +8,7 @@ from loguru import logger
 from twscrape import Tweet, gather # pyright: ignore[reportMissingTypeStubs]
 from twscrape.logger import set_log_level # pyright: ignore[reportMissingTypeStubs]
 
-from ...libraries.scrape import Data, User, append, is_unique, read
-
+from ...libraries.scrape import Data, User, append, is_unique, read, api
 
 url_filter = compile(r"(https?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)")
 
@@ -84,7 +82,4 @@ async def main():
     ))
 
   df.write_avro("data.avro")
-
-if __name__ == "__main__":
-  run(main())
 

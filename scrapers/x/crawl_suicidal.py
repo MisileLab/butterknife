@@ -1,6 +1,5 @@
 from loguru import logger
 
-from asyncio import run
 from time import sleep
 from secrets import SystemRandom
 
@@ -34,5 +33,3 @@ async def main():
       sleep(r)
   df.write_avro("user.avro")
 
-if __name__ == "__main__":
-  run(main())
