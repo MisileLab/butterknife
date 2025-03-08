@@ -2,7 +2,7 @@ from csv import DictReader
 
 from twscrape import set_log_level # pyright: ignore[reportMissingTypeStubs]
 
-from ..libraries.scrape import api
+from libraries.scrape import api
 
 set_log_level("DEBUG")
 

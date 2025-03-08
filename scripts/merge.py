@@ -1,5 +1,5 @@
 from polars import col
-from ..libraries.scrape import read
+from libraries.scrape import read
 
 df = read("data.avro")
 df_user = df.filter(col("confirmed"))

@@ -1,4 +1,4 @@
-from ..libraries.scrape import api
+from libraries.scrape import api
 
 async def main():
   acc_name = input().strip()

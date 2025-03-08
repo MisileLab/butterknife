@@ -1,4 +1,4 @@
-from ..libraries.scrape import read
+from libraries.scrape import read
 
 df = read("user.pkl")
 df = df.unique(["uid"])
