@@ -47,6 +47,9 @@ async def get_usernames() -> list[str]:
   lst = await api.pool.accounts_info()
   return [a["username"] for a in lst if not (a["active"] or a["logged_in"])]
 
+async def get_inactives() -> list[str]:
+  return [a["username"] for a in await api.pool.accounts_info() if not a["active"]]
+
 def read(file_path: str) -> DataFrame:
   return read_avro(file_path) if Path(file_path).exists() else DataFrame()
 
