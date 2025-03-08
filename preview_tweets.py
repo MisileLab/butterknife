@@ -1,7 +1,6 @@
 from contextlib import suppress
 from copy import deepcopy
 
-from polars import col
 from pypager.pager import Pager # pyright: ignore[reportMissingTypeStubs]
 from pypager.source import StringSource # pyright: ignore[reportMissingTypeStubs]
 
@@ -16,7 +15,7 @@ mapping = {
 }
 
 with suppress(KeyboardInterrupt):
-  for index, _i in enumerate(data.select(col("confirmed") is False).to_dicts()):
+  for index, _i in enumerate(data[data["confirmed"] is False].to_dicts()):
     i = Data.model_validate(_i)
     tweets: list[str] = i.data
     suicidal_comments: str = "\n--sep--\n".join(i for i in tweets if i.count("자살")+i.count("자해") != 0)

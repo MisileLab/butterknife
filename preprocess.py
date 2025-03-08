@@ -2,9 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 from pickle import dumps
 
-from polars import col
-
-from libraries.scrape import read, Data
+from libraries.scrape import UserType, read, Data
 from libraries.data import clean
 
 from torch import Tensor
@@ -20,7 +18,7 @@ amount = 3
 # just for data collection
 real_len: list[int] = []
 blank_tokenizer = 3
-t = tqdm(data.select(col('user_type') != 2).to_dicts())
+t = tqdm(data[data["user_type"] != UserType.ignored].to_dicts())
 skipped = 0
 
 for _i in t:
