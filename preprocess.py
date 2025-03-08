@@ -18,7 +18,7 @@ amount = 3
 # just for data collection
 real_len: list[int] = []
 blank_tokenizer = 3
-t = tqdm(data[data["user_type"] != UserType.ignored].to_dicts())
+t = tqdm(data[data["user_type"] != UserType.ignored.value].to_dicts())
 skipped = 0
 
 for _i in t:
