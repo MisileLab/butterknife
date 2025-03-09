@@ -5,9 +5,8 @@ from secrets import SystemRandom
 
 from libraries.scrape import UserType, is_unique, read, append, User, api
 
-base_query = "site:x.com"
 suicidals = [
-  "자해", "자해러", "자해계",
+  "자해", "자해러", "자해계", "자해흉터", "자해글귀", "자해하는사람은나쁜사람이아닙니다",
   "자살", "자살시도", "자살충동", "자살사고",
   "죽고싶다", "죽고싶어"
 ]
