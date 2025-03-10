@@ -39,13 +39,18 @@ def silent_errors(error: Exception):
   if type(error) in silent_error:
     logger.error(f"Silent error: {error}")
     login_resp = False
-    while not login_resp:
+    org_accounts_index = account_index
+    while not login_resp and org_accounts_index != account_index:
       global account_index
       account_index += 1
       if account_index == len_accounts:
         account_index = 0
       login_resp = client.login(accounts[account_index][0], accounts[account_index][1])
-    logger.info(f"login to {accounts[account_index][0]}")
+    if login_resp:
+      logger.info(f"login to {accounts[account_index][0]}")
+    else:
+      logger.error("all accounts are blocked")
+      raise error
     return
   raise error
 

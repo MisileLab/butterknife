@@ -3,7 +3,7 @@ from loguru import logger
 from time import sleep
 from secrets import SystemRandom
 
-from .lib import client
+from .lib import client, silent_errors
 from libraries.scrape import Provider, UserType, is_unique_user, read, append, User
 
 suicidals = [
@@ -18,8 +18,13 @@ async def main():
 
   for suicidal_tag in suicidals:
     logger.info(suicidal_tag)
-    data = client.hashtag_medias_top(suicidal_tag, 30)
-    data.extend(client.hashtag_medias_recent(suicidal_tag, 30))
+    try:
+      data = client.hashtag_medias_top(suicidal_tag, 30)
+      data.extend(client.hashtag_medias_recent(suicidal_tag, 30))
+    except Exception as e:
+      silent_errors(e)
+      data = client.hashtag_medias_top(suicidal_tag, 30)
+      data.extend(client.hashtag_medias_recent(suicidal_tag, 30))
     for post in data:
       user = post.user
       logger.info(user.username)
