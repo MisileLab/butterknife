@@ -5,6 +5,7 @@
 user.avro
 data.avro
 tokenized.pkl
+accounts.txt
 accounts.db
 accounts.csv
 model.pth
