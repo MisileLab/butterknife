@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
+from secrets import SystemRandom
+from time import sleep
 
 from instagrapi import Client # pyright: ignore[reportMissingTypeStubs]
 from instagrapi.exceptions import ( # pyright: ignore[reportMissingTypeStubs]
@@ -9,6 +11,7 @@ from instagrapi.exceptions import ( # pyright: ignore[reportMissingTypeStubs]
   ClientThrottledError,
   GenericRequestError,
   PleaseWaitFewMinutes,
+  ProxyAddressIsBlocked,
   RateLimitError,
   SentryBlock,
 )
@@ -44,6 +47,11 @@ _ = client.login(accounts[initalizer.account_index][0], accounts[initalizer.acco
 initalizer.account_index += 1
 
 def silent_errors(error: Exception):
+  if isinstance(error, ProxyAddressIsBlocked):
+    r = SystemRandom().randint(5, 10)
+    logger.error(f"proxy blocked, sleep {r} mins")
+    sleep(r * 60)
+    return
   if type(error) in silent_error:
     logger.error(f"Silent error: {error}")
     login_resp = False
