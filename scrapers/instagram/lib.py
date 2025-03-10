@@ -40,6 +40,8 @@ for i in Path("accounts.txt").read_text().split("\n"):
     continue
   data = i.split(":")
   accounts.append((i[0], i[1]))
+_ = client.login(accounts[initalizer.account_index][0], accounts[initalizer.account_index][1])
+initalizer.account_index += 1
 
 def silent_errors(error: Exception):
   if type(error) in silent_error:
