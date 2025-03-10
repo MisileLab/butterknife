@@ -42,7 +42,7 @@ for i in Path("accounts.txt").read_text().split("\n"):
   if i.strip() == "":
     continue
   data = i.split(":")
-  accounts.append((i[0], i[1]))
+  accounts.append((data[0], data[1]))
 _ = client.login(accounts[initalizer.account_index][0], accounts[initalizer.account_index][1])
 initalizer.account_index += 1
 
