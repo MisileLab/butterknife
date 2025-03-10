@@ -3,7 +3,8 @@ from loguru import logger
 from time import sleep
 from secrets import SystemRandom
 
-from libraries.scrape import Provider, UserType, is_unique_user, read, append, User, api
+from .lib import client
+from libraries.scrape import Provider, UserType, is_unique_user, read, append, User
 
 suicidals = [
   "자해", "자해러", "자해계", "자해흉터", "자해글귀", "자해하는사람은나쁜사람이아닙니다",
@@ -17,16 +18,18 @@ async def main():
 
   for suicidal_tag in suicidals:
     logger.info(suicidal_tag)
-    async for tweet in api.search(f"#{suicidal_tag}"): # pyright: ignore[reportUnknownMemberType]
-      user = tweet.user
+    data = client.hashtag_medias_top(suicidal_tag, 30)
+    data.extend(client.hashtag_medias_recent(suicidal_tag, 30))
+    for post in data:
+      user = post.user
       logger.info(user.username)
-      userid = str(user.id)
-      if is_unique_user(df, userid, Provider.x):
+      userid = user.pk
+      if is_unique_user(df, userid, Provider.instagram):
         df = append(df, User(
           uid=userid,
-          name=user.username,
+          name=user.pk,
           user_type=UserType.suicidal,
-          provider=Provider.x
+          provider=Provider.instagram
         ))
       r = SystemRandom().randint(0, 10)
       logger.debug(f"sleep {r} secs")
