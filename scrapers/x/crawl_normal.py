@@ -6,7 +6,7 @@ from twscrape import User # pyright: ignore[reportMissingTypeStubs]
 from secrets import SystemRandom
 from time import sleep
 
-from libraries.scrape import Provider, UserType, is_unique, append, read, User as dUser, api
+from libraries.scrape import Provider, UserType, is_unique_user, append, read, User as dUser, api, select_user
 
 sleep_interval_min = 0
 sleep_interval_max = 20
@@ -46,7 +46,7 @@ async def search_res(df: DataFrame, userid: int, max_depth: int, depth: int = 0)
   while (
     selected_following.verified
     or selected_following.followersCount > max_user_follower_count
-    or (depth == max_depth and not is_unique(df, "uid", selected_following.id))
+    or (depth == max_depth and not is_unique_user(df, str(selected_following.id), Provider.x))
   ):
     if len(followings) == 1:
       logger.warning("user has only non-normal users")
@@ -100,7 +100,7 @@ async def subroutine(i: dict[str, object], df: DataFrame, retry: int = 0) -> Dat
     return df
   logger.info(f"{user.username}: {user.displayname}")
   userid = str(user.id)
-  if is_unique(df, "uid", userid):
+  if is_unique_user(df, userid, Provider.x):
     df = append(df, dUser(uid=userid, name=user.username, user_type=UserType.suicidal, provider=Provider.x))
   else:
     logger.error(f"{user.id} is already in the list, this is a bug")
@@ -108,7 +108,7 @@ async def subroutine(i: dict[str, object], df: DataFrame, retry: int = 0) -> Dat
 
 async def main():
   df = read("user.avro")
-  for i in df.filter(col("user_type") == UserType.suicidal.value).to_dicts():
+  for i in select_user(df, Provider.x).filter(col("user_type") == UserType.suicidal.value).to_dicts():
     df = await subroutine(i, df)
   df.write_avro("user.avro")
 

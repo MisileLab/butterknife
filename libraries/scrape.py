@@ -60,6 +60,12 @@ def read(file_path: str) -> DataFrame:
 def is_unique(df: DataFrame, key: str, value: object) -> bool:
   return df.filter(col(key) == value).is_empty()
 
+def is_unique_user(df: DataFrame, uid: str, provider: Provider) -> bool:
+  return df.filter(col("uid") == uid and col("provider") == provider.value).is_empty()
+
+def select_user(df: DataFrame, provider: Provider):
+  return df.filter(col("provider") == provider.value)
+
 def append(df: DataFrame, data: dict[str, object] | Series | BaseModel | DataFrame) -> DataFrame:
   if isinstance(data, BaseModel):
     data = from_dicts([data.model_dump()])

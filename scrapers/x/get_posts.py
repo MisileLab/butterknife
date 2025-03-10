@@ -8,7 +8,7 @@ from loguru import logger
 from twscrape import Tweet, gather # pyright: ignore[reportMissingTypeStubs]
 from twscrape.logger import set_log_level # pyright: ignore[reportMissingTypeStubs]
 
-from libraries.scrape import Data, User, append, is_unique, read, api
+from libraries.scrape import Data, Provider, User, append, is_unique_user, read, api
 
 url_filter = compile(r"(https?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)")
 
@@ -44,7 +44,7 @@ async def main():
     i: User = User.model_validate(_i)
     uid = int(i.uid)
     logger.debug(uid)
-    if not is_unique(df, "uid", uid):
+    if not is_unique_user(df, i.uid, Provider.x):
       logger.info("skip because exists")
       continue
     data: list[str] = []

@@ -3,7 +3,7 @@ from loguru import logger
 from time import sleep
 from secrets import SystemRandom
 
-from libraries.scrape import Provider, UserType, is_unique, read, append, User, api
+from libraries.scrape import Provider, UserType, is_unique_user, read, append, User, api
 
 suicidals = [
   "자해", "자해러", "자해계", "자해흉터", "자해글귀", "자해하는사람은나쁜사람이아닙니다",
@@ -21,7 +21,7 @@ async def main():
       user = tweet.user
       logger.info(user.username)
       userid = str(user.id)
-      if is_unique(df, "uid", userid):
+      if is_unique_user(df, userid, Provider.x):
         df = append(df, User(
           uid=userid,
           name=user.username,
