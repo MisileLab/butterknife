@@ -30,6 +30,8 @@ accounts: list[tuple[str, str]] = []
 len_accounts = len(accounts)
 account_index = 0
 for i in Path("accounts.txt").read_text().split("\n"):
+  if i.strip() == "":
+    continue
   data = i.split(":")
   accounts.append((i[0], i[1]))
 
