@@ -15,11 +15,16 @@ class UserType(Enum):
   suicidal = 1
   ignored = 2
 
+class Provider(Enum):
+  x = "x"
+  instagram = "instagram"
+
 class User(BaseModel):
-  uid: int
+  uid: str
   name: str
   user_type: UserType
   url: str
+  provider: str
 
 class Data(User):
   data: list[str]
