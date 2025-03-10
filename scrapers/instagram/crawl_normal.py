@@ -99,9 +99,14 @@ async def subroutine(i: dict[str, object], df: DataFrame, retry: int = 0) -> Dat
     logger.error(f"{userid} not found, skipping")
     return df
   logger.info(f"{user.username}: {user.displayname}")
-  userid = str(user.id)
-  if is_unique(df, "uid", userid):
-    df = append(df, dUser(uid=userid, name=user.username, user_type=UserType.suicidal, provider=Provider.x))
+  if is_unique(df, "uid", user.id):
+    df = append(df, dUser(
+      uid=str(user.id),
+      name=user.username,
+      url=user.url,
+      user_type=UserType.suicidal,
+      provider=Provider.x
+    ))
   else:
     logger.error(f"{user.id} is already in the list, this is a bug")
   return df

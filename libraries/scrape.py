@@ -23,8 +23,7 @@ class User(BaseModel):
   uid: str
   name: str
   user_type: UserType
-  url: str
-  provider: str
+  provider: Provider
 
 class Data(User):
   data: list[str]

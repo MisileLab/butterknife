@@ -42,7 +42,7 @@ async def main():
 
   for _i in df_user.to_dicts():
     i: User = User.model_validate(_i)
-    uid = int(i.uid)
+    uid: int = i.uid
     logger.debug(uid)
     if not is_unique(df, "uid", uid):
       logger.info("skip because exists")
@@ -74,11 +74,11 @@ async def main():
       logger.error(f"no tweets on {uid}, skip it")
       continue
     df = append(df, Data(
-      uid=str(uid),
+      uid=uid,
       name=i.name,
+      url=i.url,
       user_type=i.user_type,
-      data=data,
-      provider=i.provider
+      data=data
     ))
 
   df.write_avro("data.avro")
