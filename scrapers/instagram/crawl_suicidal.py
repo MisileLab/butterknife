@@ -1,9 +1,10 @@
-from loguru import logger
-
 from time import sleep
 from secrets import SystemRandom
 
-from .lib import client, silent_errors
+from loguru import logger
+from pydantic import BaseModel
+
+from .lib import client
 from libraries.scrape import Provider, UserType, is_unique_user, read, append, User
 
 suicidals = [
@@ -12,27 +13,26 @@ suicidals = [
   "죽고싶다", "죽고싶어"
 ]
 
+class InternalUser(BaseModel):
+  pk: str | int
+  id: str | int | None
+  username: str | None
 
 async def main():
   df = read("user.avro")
 
   for suicidal_tag in suicidals:
     logger.info(suicidal_tag)
-    try:
-      data = client.hashtag_medias_top(suicidal_tag, 30)
-      data.extend(client.hashtag_medias_recent(suicidal_tag, 30))
-    except Exception as e:
-      silent_errors(e)
-      data = client.hashtag_medias_top(suicidal_tag, 30)
-      data.extend(client.hashtag_medias_recent(suicidal_tag, 30))
-    for post in data:
-      user = post.user
+    data = client.hashtag_medias_top(suicidal_tag, count=30) # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    data.extend(client.hashtag_medias_recent(suicidal_tag, count=30)) # pyright: ignore[reportUnknownMemberType]
+    for post in data: # pyright: ignore[reportUnknownVariableType]
+      user = InternalUser.model_validate(post["user"])
       logger.info(user.username)
-      userid = user.pk
+      userid = str(user.pk)
       if is_unique_user(df, userid, Provider.instagram):
         df = append(df, User(
           uid=userid,
-          name=user.pk,
+          name="" if user.username is None else user.username,
           user_type=UserType.suicidal,
           provider=Provider.instagram
         ))
