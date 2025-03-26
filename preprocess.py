@@ -2,13 +2,12 @@ from collections import defaultdict
 from pathlib import Path
 from pickle import dumps
 
-from polars import col
 from torch import Tensor
 from tqdm import tqdm
 from transformers import AutoTokenizer # pyright: ignore[reportMissingTypeStubs]
 
 from libraries.data import clean
-from libraries.scrape import Data, UserType, read
+from libraries.df import read
 
 tokenizer = AutoTokenizer.from_pretrained('beomi/kcELECTRA-base') # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 data = read("data.avro")
@@ -19,7 +18,7 @@ amount = 3
 # just for data collection
 real_len: list[int] = []
 blank_tokenizer = 3
-t = tqdm(data.filter(col("user_type") != UserType.ignored.value).to_dicts())
+t = tqdm(data.to_dicts())
 skipped = 0
 
 for _i in t:

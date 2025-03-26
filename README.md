@@ -12,18 +12,14 @@ Identify suicidal or not using stream of text.
   - [x] Epoch support
   - [x] Automatic Loss Stop (save best model)
   - [x] Optimizer
-  - [ ] make mild suicidal to 50% suicidal
-  - [ ] seperate message of user that changed (non-suicidal <-> suicidal)
-  - [ ] seperate multi-modal version
-  - [ ] More datasets
-    - [x] X
-    - [ ] Bluesky
-    - [ ] Mastodon
-    - [ ] Instagram
-- [ ] Multi Lang support
-  - [ ] English
-  - [ ] Japanese
-  - [ ] Chinese
+  - [ ] Datasets
+    - [x] [Mimic IV Demo](https://physionet.org/content/mimic-iv-demo)
+    - [ ] Mimic IV
+    - [ ] Korean Hospital Data
+  - [ ] Multi Lang support
+    - [ ] English
+    - [ ] Japanese
+    - [ ] Chinese
 
 ## Models
 

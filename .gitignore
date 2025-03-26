@@ -2,13 +2,9 @@
 .infisical.json
 .python-version
 .cache
-user.avro
-data.avro
 tokenized.pkl
-accounts.txt
-accounts.db
-accounts.csv
 model.pth
+data
 
 # community/Python/JupyterNotebooks.gitignore by ignofierplus
 .ipynb_checkpoints
