@@ -13,7 +13,7 @@ dependencies = [
   "pip==25.0.1", # for rocm
   "polars==1.26.0",
   "pyarrow==19.0.1",
-  "pydantic==2.11.0",
+  "pydantic==2.11.1",
   "pypager==3.0.1",
   "scikit-learn==1.6.1",
   "soynlp",
