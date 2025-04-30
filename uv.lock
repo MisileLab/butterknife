@@ -1,6 +1,6 @@
 version = 1
 revision = 2
-requires-python = "==3.13.2"
+requires-python = "==3.13.3"
 
 [manifest]
 overrides = [{ name = "pydantic", specifier = "==2.10.6" }]

@@ -3,7 +3,7 @@ name = "butterknife"
 version = "0.1.0"
 description = "Suicide Detection Model"
 readme = "README.md"
-requires-python = "==3.13.2"
+requires-python = "==3.13.3"
 dependencies = [
   "emoji==2.14.1",
   "jupyterlab==4.4.1",
