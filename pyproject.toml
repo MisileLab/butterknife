@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = "==3.13.3"
 dependencies = [
   "emoji==2.14.1",
-  "jupyterlab==4.4.1",
+  "jupyterlab==4.4.2",
   "koreanize-matplotlib==0.1.1",
   "loguru==0.7.3",
   "matplotlib==3.10.1",
