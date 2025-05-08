@@ -9,7 +9,7 @@ dependencies = [
   "jupyterlab==4.4.2",
   "koreanize-matplotlib==0.1.1",
   "loguru==0.7.3",
-  "matplotlib==3.10.1",
+  "matplotlib==3.10.3",
   "pip==25.1.1", # for rocm
   "polars==1.29.0",
   "pyarrow==20.0.0",
